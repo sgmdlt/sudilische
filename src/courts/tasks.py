@@ -10,8 +10,9 @@ captcha_solver = CaptchaSolver()
 with open('proxy.txt', 'r') as f:
     PROXIES_LIST = [line.strip() for line in f if line.strip()]
 
-
-@app.task
+# TODO: add retry for custom exceptions
+@app.task(autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 2, 'default_retry_delay': 30})
 def search_cases(url):
     with Downloader(captcha_handler=CaptchaHandler(captcha_solver), proxies_list=PROXIES_LIST) as downloader:
         result = []

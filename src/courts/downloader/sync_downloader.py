@@ -1,6 +1,4 @@
 import logging
-import random
-import time
 
 import requests
 
@@ -60,34 +58,27 @@ class Downloader:
 
         proxy = self._get_next_proxy()
         logger.info(f"Отправка запроса к {url} через прокси {proxy}")
-        time.sleep(random.uniform(1, 3))
-
         try:
             resp = self.session.get(url, proxies={'http': proxy, 'https': proxy}, verify=verify_cert)
             resp.encoding = resp.encoding or 'windows-1251'
-            text = resp.text
+            resp.raise_for_status()
 
-            if resp.ok or resp.status_code == 499:
-                if self._is_captcha_required(text):
-                    logger.warning("Капча обнаружена. Начинаем обработку капчи.")
-                    text = self.captcha_handler.handle_captcha(self.session, url)
-                    if text:
-                        return text
-                    else:
-                        logger.error("Не удалось решить капчу.")
-                        return None
-                else:
-                    logger.debug(f"Успешно получен ответ от {url}")
-                    return text
-
-            if resp.status_code in [502, 503]:
-                logger.warning("Суд временно недоступен")
-
-            logger.error(f"{resp.status_code} {resp.reason} при обращении к {url}")
-            return text
         except requests.RequestException as e:
-            logger.exception(f"Ошибка сети при запросе к {url}: {e}")
-        raise Exception(f"Не удалось получить данные с {url}")
+            logger.warning("Суд временно недоступен")
+            logger.error(f"{resp.status_code} {resp.reason} при обращении к {url}")
+            raise e
+
+        text = resp.text
+        if resp.ok or resp.status_code == 499:
+            if self._is_captcha_required(text):
+                logger.warning("Капча обнаружена. Начинаем обработку капчи.")
+                text = self.captcha_handler.handle_captcha(self.session, url)
+                if text:
+                    return text
+                else:
+                    logger.error("Не удалось решить капчу.")
+                    return None
+        return text
 
     def _is_captcha_required(self, text: str) -> bool:
         """
