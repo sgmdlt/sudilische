@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from vcr import VCR
 
-# Настройка VCR для асинхронного режима
 my_vcr = VCR(decode_compressed_response=True, record_mode='once')
 
 def custom_before_record_response(response):

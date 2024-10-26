@@ -1,12 +1,12 @@
-from celery import Celery
+from celery import group
 
 from courts.generator.url_generator import generate_urls
 from courts.tasks import search_cases
 
-app = Celery('tasks', broker='amqp://guest:guest@172.17.0.1:5672//')
-
 
 def produce_tasks(search_params):
-    for url in generate_urls(search_params):
-        search_cases.delay(url)
+    urls = list(generate_urls(search_params))
+    job = group(search_cases.s(url) for url in urls)
+    result = job.apply_async()
     print("Все задачи отправлены на выполнение")
+    return result.children

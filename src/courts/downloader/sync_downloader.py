@@ -87,7 +87,6 @@ class Downloader:
             return text
         except requests.RequestException as e:
             logger.exception(f"Ошибка сети при запросе к {url}: {e}")
-        time.sleep(5)
         raise Exception(f"Не удалось получить данные с {url}")
 
     def _is_captcha_required(self, text: str) -> bool:
